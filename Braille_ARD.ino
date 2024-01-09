@@ -2,14 +2,15 @@
 #include <Servo.h>
 #include <SoftwareSerial.h>
 
-Servo srv[6];  // Lista de Servos, pines y posiciones iniciales
+Servo srv[6];                // Lista de Servos, pines y posiciones iniciales
+int swnumber[2] = { 2, 4 };  //Lista de botones
 
 int servo[] = { 3, 5, 6, 9, 10, 11 };  // Puertos pwm
 
 int servDownPosition[] = { 155, 170, 170, 175, 166, 162 };  // Posiciones iniciales (calibración de servomotores a una misma altura)
 int servUpPosition[] = { 130, 145, 145, 145, 140, 142 };    // Posiciones finales
 
-char chars[] = "abcdefghijklmnopqrstuvwxyz,;:.?!#1234567890 ";  //Arreglo de letras y posiciones para cada servo
+char chars[] = "abcdefghijklmnopqrstuvwxyz,;:.?!#1234567890 ";  // Arreglo de letras y posiciones para cada servo
 
 int arr[6][44] = {
   { 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 1, 1, 0, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0 },  //0
@@ -20,19 +21,23 @@ int arr[6][44] = {
   { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 0, 0, 0, 1, 1, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 }   //5
 };
 
-bool calibrated = false;
-bool executed = false;
-
 char inputBuffer[32];
 int bufferIndex = 0;
 
+bool inputAnswers[32];
+
 void setup() {
-  //Iniciar consola serial
+  // Iniciar consola serial
   Serial.begin(9600);
 
-  //Iniciar servos en puerto pwm
+  // Iniciar servos en puerto pwm
   for (int i = 0; i < 6; i++) {
     srv[i].attach(servo[i]);
+  }
+
+  // Iniciar botones en puertos
+  for (int i = 0; i < 2; i++) {
+    pinMode(swnumber[i], INPUT);
   }
 
   setInitPosition();
@@ -49,6 +54,7 @@ void loop() {
 
   if (strlen(inputBuffer) > 0) {
     print();
+    showScore();
     clearInputBuffer();
   }
 }
@@ -81,6 +87,7 @@ void print() {
 
     if (charPosition != -1) {
       printCharacter(charPosition);
+      setAnswer(index);
     } else {
       Serial.println("Caracter no identificado: " + String(character));
     }
@@ -113,8 +120,15 @@ void printCharacter(int charPosition) {
       srv[i].write(servDownPosition[i]);
     }
   }
+}
 
-  delay(2000);
+void setAnswer(int index) {
+  while (digitalRead(swnumber[0]) == LOW && digitalRead(swnumber[1]) == LOW) {}
+
+  if (digitalRead(swnumber[0]) == HIGH || digitalRead(swnumber[1]) == HIGH) {
+    inputAnswers[index] = digitalRead(swnumber[0]) == HIGH ? true : false;
+    delay(1000);
+  }
 }
 
 void setInputBuffer(char inputChar) {
@@ -125,9 +139,17 @@ void setInputBuffer(char inputChar) {
   }
 }
 
+void showScore() {
+  Serial.println("RESPUESTAS: ");
+   for (int index = 0; index < (strlen(inputBuffer)); index++) {
+    Serial.println(inputAnswers[index] ? "Correct" : "Wrong");
+  }
+}
+
 void clearInputBuffer() {
   for (int index = 0; index < (sizeof(inputBuffer)); index++) {
     inputBuffer[index] = '\0';
+    inputAnswers[index] = '\0';
     delay(10);
   }
 
