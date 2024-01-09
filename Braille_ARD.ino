@@ -22,7 +22,9 @@ int arr[6][44] = {
 
 bool calibrated = false;
 bool executed = false;
-String inputBuffer = "";
+
+char inputBuffer[32];
+int bufferIndex = 0;
 
 void setup() {
   //Iniciar consola serial
@@ -32,42 +34,29 @@ void setup() {
   for (int i = 0; i < 6; i++) {
     srv[i].attach(servo[i]);
   }
+
+  setInitPosition();
+  Serial.println();
+  Serial.println("========================");
+  Serial.println("Ingrese una cadena de caracteres:");
 }
 
 void loop() {
-  if (!calibrated) {
-    setInitPosition();
-    calibrated = true;
-  }
-
-  if (!executed) {
-    Serial.println("Ingrese un carácter:");
-
-    while (Serial.available() == 0) {}
-
+  while (Serial.available() > 0) {
     char inputChar = Serial.read();
-    String input = String(inputChar);
-
-    if (int(inputChar) != 10) {
-      print(input);
-    }
-
-    executed = true;
+    setInputBuffer(inputChar);
   }
 
-  if (executed && Serial.available() > 0) {
-    executed = false;
+  if (strlen(inputBuffer) > 0) {
+    print();
+    clearInputBuffer();
   }
 }
 
 void setInitPosition() {
-  Serial.println();
-
   for (int i = 0; i < 6; i++) {
     srv[i].write(servDownPosition[i]);
   }
-
-  Serial.println("Servomotores en producciones iniciales.");
 }
 
 void setEndPosition() {
@@ -80,20 +69,32 @@ void setEndPosition() {
   Serial.println("Servomotores ELEVADOS");
 }
 
-void print(String character) {
-  int charPosition = searchCharacterPosition(character);
+void print() {
+  Serial.println("Entrada: " + String(inputBuffer));
+  Serial.print("Ejecutando... ");
 
-  if (charPosition != -1) {
-    printCharacter(charPosition);
-    delay(2000);
-  } else {
-    Serial.println("Caracter no identificado: " + String(character));
+  for (int index = 0; index < (strlen(inputBuffer)); index++) {
+    String character = String(inputBuffer[index]);
+    Serial.print(character);
+
+    int charPosition = searchCharacterPosition(character);
+
+    if (charPosition != -1) {
+      printCharacter(charPosition);
+    } else {
+      Serial.println("Caracter no identificado: " + String(character));
+    }
   }
+
+  setInitPosition();
+
+  Serial.println();
+  Serial.println("Ejecucion terminada.");
 }
 
 int searchCharacterPosition(String input) {
   for (int i = 0; i < sizeof(chars); i++) {
-    if (input[0] == chars[i]) {
+    if (tolower(input[0]) == chars[i]) {
       return i;
       break;
     }
@@ -112,4 +113,26 @@ void printCharacter(int charPosition) {
       srv[i].write(servDownPosition[i]);
     }
   }
+
+  delay(2000);
+}
+
+void setInputBuffer(char inputChar) {
+  if (int(inputChar) != 10) {
+    inputBuffer[bufferIndex] = inputChar;
+    bufferIndex++;
+    delay(10);
+  }
+}
+
+void clearInputBuffer() {
+  for (int index = 0; index < (sizeof(inputBuffer)); index++) {
+    inputBuffer[index] = '\0';
+    delay(10);
+  }
+
+  bufferIndex = 0;
+
+  Serial.println("========================");
+  Serial.println("Ingrese una cadena de caracteres:");
 }
