@@ -2,6 +2,9 @@
 #include <Servo.h>
 #include <SoftwareSerial.h>
 
+//Libreria para serial bluetooth
+SoftwareSerial btSerial(0,1);
+
 Servo srv[6];                // Lista de Servos, pines y posiciones iniciales
 int swnumber[2] = { 2, 4 };  //Lista de botones
 
@@ -30,6 +33,9 @@ int bufferIndex = 0;
 bool shuffle = true;
 
 void setup() {
+  //Iniciar software serial
+  btSerial.begin(9600);
+
   // Iniciar consola serial
   Serial.begin(9600);
 
@@ -50,8 +56,13 @@ void setup() {
 }
 
 void loop() {
-  while (Serial.available() > 0) {
+  /* while (Serial.available() > 0) {
     char inputChar = Serial.read();
+    setInputBuffer(inputChar);
+  } */
+
+  if (btSerial.available() > 0) {
+    char inputChar = btSerial.read();
     setInputBuffer(inputChar);
   }
 
