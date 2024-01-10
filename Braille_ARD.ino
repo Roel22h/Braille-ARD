@@ -22,9 +22,12 @@ int arr[6][44] = {
 };
 
 char inputBuffer[32];
-int bufferIndex = 0;
+char voiceBuffer[32];
 
 bool inputAnswers[32];
+bool solution[32];
+int bufferIndex = 0;
+bool shuffle = true;
 
 void setup() {
   // Iniciar consola serial
@@ -53,6 +56,7 @@ void loop() {
   }
 
   if (strlen(inputBuffer) > 0) {
+    shuffleInputBuffer();
     print();
     showScore();
     clearInputBuffer();
@@ -63,25 +67,24 @@ void setInitPosition() {
   for (int i = 0; i < 6; i++) {
     srv[i].write(servDownPosition[i]);
   }
+
+  delay(1000);
 }
 
 void setEndPosition() {
-  Serial.println();
-
   for (int i = 0; i < 6; i++) {
     srv[i].write(servUpPosition[i]);
   }
-
-  Serial.println("Servomotores ELEVADOS");
 }
 
 void print() {
   Serial.println("Entrada: " + String(inputBuffer));
-  Serial.print("Ejecutando... ");
+  Serial.println("Voice: " + String(voiceBuffer));
+  Serial.println("--------------------------------");
 
   for (int index = 0; index < (strlen(inputBuffer)); index++) {
     String character = String(inputBuffer[index]);
-    Serial.print(character);
+    Serial.println("Ejecutando(" + character + ")");
 
     int charPosition = searchCharacterPosition(character);
 
@@ -91,12 +94,8 @@ void print() {
     } else {
       Serial.println("Caracter no identificado: " + String(character));
     }
+    setInitPosition();
   }
-
-  setInitPosition();
-
-  Serial.println();
-  Serial.println("Ejecucion terminada.");
 }
 
 int searchCharacterPosition(String input) {
@@ -120,36 +119,62 @@ void printCharacter(int charPosition) {
       srv[i].write(servDownPosition[i]);
     }
   }
+
+  delay(1000);
 }
 
 void setAnswer(int index) {
+  Serial.println("El caracter es: " + String(voiceBuffer[index]) + "?");
+  Serial.println();
+
   while (digitalRead(swnumber[0]) == LOW && digitalRead(swnumber[1]) == LOW) {}
 
   if (digitalRead(swnumber[0]) == HIGH || digitalRead(swnumber[1]) == HIGH) {
     inputAnswers[index] = digitalRead(swnumber[0]) == HIGH ? true : false;
-    delay(1000);
+    delay(10);
   }
 }
 
 void setInputBuffer(char inputChar) {
   if (int(inputChar) != 10) {
     inputBuffer[bufferIndex] = inputChar;
-    bufferIndex++;
     delay(10);
+    voiceBuffer[bufferIndex] = inputChar;
+    delay(10);
+    bufferIndex++;
   }
 }
 
 void showScore() {
   Serial.println("RESPUESTAS: ");
-   for (int index = 0; index < (strlen(inputBuffer)); index++) {
-    Serial.println(inputAnswers[index] ? "Correct" : "Wrong");
+  Serial.println("Character   |   Answer   |   Solution");
+  Serial.println("_____________________________________");
+  int score = 0;
+
+  for (int index = 0; index < (strlen(inputBuffer)); index++) {
+    if (inputAnswers[index] == solution[index]) {
+      score++;
+    }
+
+    String answer = inputAnswers[index] ? "Correct" : "Wrong";
+    String response = solution[index] ? "Correct" : "Wrong";
+
+    Serial.println(String(voiceBuffer[index]) + "           |  " + answer + "    |   " + response);
   }
+
+  Serial.println("_______________");
+  Serial.println("Puntaje: " + String(score) + "/" + String(strlen(inputBuffer)));
 }
 
 void clearInputBuffer() {
   for (int index = 0; index < (sizeof(inputBuffer)); index++) {
     inputBuffer[index] = '\0';
+    delay(10);
     inputAnswers[index] = '\0';
+    delay(10);
+    voiceBuffer[index] = '\0';
+    delay(10);
+    solution[index] = '\0';
     delay(10);
   }
 
@@ -157,4 +182,35 @@ void clearInputBuffer() {
 
   Serial.println("========================");
   Serial.println("Ingrese una cadena de caracteres:");
+}
+
+void shuffleInputBuffer() {
+  if (shuffle) {
+    randomSeed(analogRead(0));
+    int size = strlen(inputBuffer);
+
+    for (int i = 0; i < size; i++) {
+      voiceBuffer[i] = inputBuffer[i];
+      delay(10);
+    }
+
+    for (int i = size - 1; i > 0; i--) {
+      int randomIndex = random(i + 1);
+
+      int temp = voiceBuffer[i];
+      voiceBuffer[i] = voiceBuffer[randomIndex];
+      delay(10);
+      voiceBuffer[randomIndex] = temp;
+      delay(10);
+    }
+  }
+
+  setSolution();
+}
+
+void setSolution() {
+  for (int index = 0; index < (strlen(inputBuffer)); index++) {
+    solution[index] = inputBuffer[index] == voiceBuffer[index] ? true : false;
+    delay(10);
+  }
 }
