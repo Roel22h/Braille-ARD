@@ -1,12 +1,13 @@
 //Librería para controlar servo
 #include <Servo.h>
 #include <SoftwareSerial.h>
+#include "pitches.h"
 
-//Libreria para serial bluetooth
-SoftwareSerial btSerial(0,1);
+// Serial consola JAVA y ARDUINO
+SoftwareSerial javaSerial(0, 1);
 
 Servo srv[6];                // Lista de Servos, pines y posiciones iniciales
-int swnumber[2] = { 2, 4 };  //Lista de botones
+int swnumber[2] = { 2, 4 };  // Lista de botones
 
 int servo[] = { 3, 5, 6, 9, 10, 11 };  // Puertos pwm
 
@@ -24,20 +25,14 @@ int arr[6][44] = {
   { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 0, 0, 0, 1, 1, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 }   //5
 };
 
-char inputBuffer[32];
-char voiceBuffer[32];
+String inputBuffer;
+bool inputAnswers;
 
-bool inputAnswers[32];
-bool solution[32];
-int bufferIndex = 0;
-bool shuffle = true;
+int startTone = NOTE_B0;
 
 void setup() {
-  //Iniciar software serial
-  btSerial.begin(9600);
-
-  // Iniciar consola serial
-  Serial.begin(9600);
+  // Iniciar consola JAVA serial
+  javaSerial.begin(9600);
 
   // Iniciar servos en puerto pwm
   for (int i = 0; i < 6; i++) {
@@ -50,27 +45,18 @@ void setup() {
   }
 
   setInitPosition();
-  Serial.println();
-  Serial.println("========================");
-  Serial.println("Ingrese una cadena de caracteres:");
+  tone(7, startTone, 500);
 }
 
 void loop() {
-  /* while (Serial.available() > 0) {
-    char inputChar = Serial.read();
-    setInputBuffer(inputChar);
-  } */
+  while (javaSerial.available() > 0) {
+    char inputChar = javaSerial.read();
 
-  if (btSerial.available() > 0) {
-    char inputChar = btSerial.read();
     setInputBuffer(inputChar);
   }
 
-  if (strlen(inputBuffer) > 0) {
-    shuffleInputBuffer();
+  if (inputBuffer.length() > 0) {
     print();
-    showScore();
-    clearInputBuffer();
   }
 }
 
@@ -88,25 +74,25 @@ void setEndPosition() {
   }
 }
 
-void print() {
-  Serial.println("Entrada: " + String(inputBuffer));
-  Serial.println("Voice: " + String(voiceBuffer));
-  Serial.println("--------------------------------");
-
-  for (int index = 0; index < (strlen(inputBuffer)); index++) {
-    String character = String(inputBuffer[index]);
-    Serial.println("Ejecutando(" + character + ")");
-
-    int charPosition = searchCharacterPosition(character);
-
-    if (charPosition != -1) {
-      printCharacter(charPosition);
-      setAnswer(index);
-    } else {
-      Serial.println("Caracter no identificado: " + String(character));
-    }
-    setInitPosition();
+void setInputBuffer(char inputChar) {
+  if (int(inputChar) != 10) {
+    inputBuffer = inputChar;
+    delay(20);
   }
+}
+
+void print() {
+  int charPosition = searchCharacterPosition(inputBuffer);
+
+  if (charPosition != -1) {
+    printCharacter(charPosition);
+    setAnswer();
+    sendAnswer();
+  } else {
+    // Serial.println("Caracter no identificado: " + String(character));
+  }
+
+  setInitPosition();
 }
 
 int searchCharacterPosition(String input) {
@@ -134,94 +120,16 @@ void printCharacter(int charPosition) {
   delay(1000);
 }
 
-void setAnswer(int index) {
-  Serial.println("El caracter es: " + String(voiceBuffer[index]) + "?");
-  Serial.println();
-
+void setAnswer() {
   while (digitalRead(swnumber[0]) == LOW && digitalRead(swnumber[1]) == LOW) {}
 
   if (digitalRead(swnumber[0]) == HIGH || digitalRead(swnumber[1]) == HIGH) {
-    inputAnswers[index] = digitalRead(swnumber[0]) == HIGH ? true : false;
+    inputAnswers = digitalRead(swnumber[0]) == HIGH ? true : false;
     delay(10);
   }
 }
 
-void setInputBuffer(char inputChar) {
-  if (int(inputChar) != 10) {
-    inputBuffer[bufferIndex] = inputChar;
-    delay(10);
-    voiceBuffer[bufferIndex] = inputChar;
-    delay(10);
-    bufferIndex++;
-  }
-}
-
-void showScore() {
-  Serial.println("RESPUESTAS: ");
-  Serial.println("Character   |   Answer   |   Solution");
-  Serial.println("_____________________________________");
-  int score = 0;
-
-  for (int index = 0; index < (strlen(inputBuffer)); index++) {
-    if (inputAnswers[index] == solution[index]) {
-      score++;
-    }
-
-    String answer = inputAnswers[index] ? "Correct" : "Wrong";
-    String response = solution[index] ? "Correct" : "Wrong";
-
-    Serial.println(String(voiceBuffer[index]) + "           |  " + answer + "    |   " + response);
-  }
-
-  Serial.println("_______________");
-  Serial.println("Puntaje: " + String(score) + "/" + String(strlen(inputBuffer)));
-}
-
-void clearInputBuffer() {
-  for (int index = 0; index < (sizeof(inputBuffer)); index++) {
-    inputBuffer[index] = '\0';
-    delay(10);
-    inputAnswers[index] = '\0';
-    delay(10);
-    voiceBuffer[index] = '\0';
-    delay(10);
-    solution[index] = '\0';
-    delay(10);
-  }
-
-  bufferIndex = 0;
-
-  Serial.println("========================");
-  Serial.println("Ingrese una cadena de caracteres:");
-}
-
-void shuffleInputBuffer() {
-  if (shuffle) {
-    randomSeed(analogRead(0));
-    int size = strlen(inputBuffer);
-
-    for (int i = 0; i < size; i++) {
-      voiceBuffer[i] = inputBuffer[i];
-      delay(10);
-    }
-
-    for (int i = size - 1; i > 0; i--) {
-      int randomIndex = random(i + 1);
-
-      int temp = voiceBuffer[i];
-      voiceBuffer[i] = voiceBuffer[randomIndex];
-      delay(10);
-      voiceBuffer[randomIndex] = temp;
-      delay(10);
-    }
-  }
-
-  setSolution();
-}
-
-void setSolution() {
-  for (int index = 0; index < (strlen(inputBuffer)); index++) {
-    solution[index] = inputBuffer[index] == voiceBuffer[index] ? true : false;
-    delay(10);
-  }
+void sendAnswer() {
+  javaSerial.print(inputAnswers);
+  inputBuffer = "";
 }
