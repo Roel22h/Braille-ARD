@@ -6,8 +6,8 @@
 // Serial consola JAVA y ARDUINO
 SoftwareSerial javaSerial(0, 1);
 
-Servo srv[6];                // Lista de Servos, pines y posiciones iniciales
-int swnumber[2] = { 2, 4 };  // Lista de botones
+Servo srv[6];                      // Lista de Servos, pines y posiciones iniciales
+int swnumber[4] = { 2, 4, 7, 8 };  // Lista de botones
 
 int servo[] = { 3, 5, 6, 9, 10, 11 };  // Puertos pwm
 
@@ -26,7 +26,11 @@ int arr[6][44] = {
 };
 
 String inputBuffer;
-bool inputAnswers;
+
+bool nextOptionSent = false;
+bool repeatOptionSent = false;
+bool finishOptionSent = false;
+bool optionNextAssigned = false;
 
 int startTone = NOTE_B0;
 
@@ -40,23 +44,25 @@ void setup() {
   }
 
   // Iniciar botones en puertos
-  for (int i = 0; i < 2; i++) {
+  for (int i = 0; i < 4; i++) {
     pinMode(swnumber[i], INPUT);
   }
 
   setInitPosition();
-  tone(7, startTone, 500);
 }
 
 void loop() {
   while (javaSerial.available() > 0) {
     char inputChar = javaSerial.read();
-
     setInputBuffer(inputChar);
   }
 
   if (inputBuffer.length() > 0) {
-    print();
+    if (inputBuffer == "?") {
+      sendLastOption();
+    } else {
+      print();
+    }
   }
 }
 
@@ -86,8 +92,9 @@ void print() {
 
   if (charPosition != -1) {
     printCharacter(charPosition);
-    setAnswer();
     sendAnswer();
+    sendOptionNext();
+    clearProps();
   } else {
     // Serial.println("Caracter no identificado: " + String(character));
   }
@@ -120,16 +127,63 @@ void printCharacter(int charPosition) {
   delay(1000);
 }
 
-void setAnswer() {
-  while (digitalRead(swnumber[0]) == LOW && digitalRead(swnumber[1]) == LOW) {}
+void sendAnswer() {
+  if (!nextOptionSent) {
+    while (digitalRead(swnumber[1]) == LOW && digitalRead(swnumber[2]) == LOW) {}
 
-  if (digitalRead(swnumber[0]) == HIGH || digitalRead(swnumber[1]) == HIGH) {
-    inputAnswers = digitalRead(swnumber[0]) == HIGH ? true : false;
+    if (digitalRead(swnumber[1]) == HIGH) {
+      javaSerial.print(true);
+    } else {
+      javaSerial.print(false);
+    }
+
+    nextOptionSent = true;
     delay(10);
+  } else {
+    return;
   }
 }
 
-void sendAnswer() {
-  javaSerial.print(inputAnswers);
+void sendOptionNext() {
+  if (!optionNextAssigned) {
+    while (digitalRead(swnumber[0]) == LOW) {}
+    javaSerial.print("N");
+    optionNextAssigned = true;
+    delay(10);
+  } else {
+    return;
+  }
+}
+
+void sendLastOption() {
+  if (!finishOptionSent && !repeatOptionSent) {
+    while (digitalRead(swnumber[0]) == LOW && digitalRead(swnumber[3]) == LOW) {}
+
+    if (digitalRead(swnumber[0]) == HIGH) {
+      javaSerial.print("F");
+      finishOptionSent = true;
+    } else {
+      javaSerial.print("A");
+      repeatOptionSent = true;
+    }
+
+    delay(10);
+    clearProps();
+  } else {
+    return;
+  }
+}
+
+void clearProps() {
   inputBuffer = "";
+  delay(10);
+
+  nextOptionSent = false;
+  delay(10);
+  optionNextAssigned = false;
+  delay(10);
+  repeatOptionSent = false;
+  delay(10);
+  finishOptionSent = false;
+  delay(10);
 }
