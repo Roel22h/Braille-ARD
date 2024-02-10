@@ -6,8 +6,8 @@
 // Serial consola JAVA y ARDUINO
 SoftwareSerial javaSerial(0, 1);
 
-Servo srv[6];                      // Lista de Servos, pines y posiciones iniciales
-int swnumber[4] = { 2, 4, 7, 8 };  // Lista de botones
+Servo srv[6];                          // Lista de Servos, pines y posiciones iniciales
+int swnumber[5] = { 2, 4, 12, 7, 8 };  // Lista de botones
 
 int servo[] = { 3, 5, 6, 9, 10, 11 };  // Puertos pwm
 
@@ -27,10 +27,11 @@ int arr[6][44] = {
 
 String inputBuffer;
 
-bool nextOptionSent = false;
-bool repeatOptionSent = false;
+bool answerOptionSent = false;
+bool repeatTestOptionSent = false;
 bool finishOptionSent = false;
-bool optionNextAssigned = false;
+bool nextOptionSend = false;
+bool repeatSoundCharacterOptionSend = false;
 
 int startTone = NOTE_B0;
 
@@ -44,7 +45,7 @@ void setup() {
   }
 
   // Iniciar botones en puertos
-  for (int i = 0; i < 4; i++) {
+  for (int i = 0; i < 5; i++) {
     pinMode(swnumber[i], INPUT);
   }
 
@@ -128,16 +129,21 @@ void printCharacter(int charPosition) {
 }
 
 void sendAnswer() {
-  if (!nextOptionSent) {
-    while (digitalRead(swnumber[1]) == LOW && digitalRead(swnumber[2]) == LOW) {}
+  if (!answerOptionSent) {
+    while ((digitalRead(swnumber[1]) == LOW) && (digitalRead(swnumber[2]) == LOW) && (digitalRead(swnumber[3]) == LOW)) {}
 
     if (digitalRead(swnumber[1]) == HIGH) {
       javaSerial.print(true);
-    } else {
+      answerOptionSent = true;
+    } else if (digitalRead(swnumber[3]) == HIGH) {
       javaSerial.print(false);
+      answerOptionSent = true;
+    } else {
+      javaSerial.print("S");
+      delay(1000);
+      sendAnswer();
     }
 
-    nextOptionSent = true;
     delay(10);
   } else {
     return;
@@ -145,10 +151,10 @@ void sendAnswer() {
 }
 
 void sendOptionNext() {
-  if (!optionNextAssigned) {
+  if (!nextOptionSend) {
     while (digitalRead(swnumber[0]) == LOW) {}
     javaSerial.print("N");
-    optionNextAssigned = true;
+    nextOptionSend = true;
     delay(10);
   } else {
     return;
@@ -156,15 +162,15 @@ void sendOptionNext() {
 }
 
 void sendLastOption() {
-  if (!finishOptionSent && !repeatOptionSent) {
-    while (digitalRead(swnumber[0]) == LOW && digitalRead(swnumber[3]) == LOW) {}
+  if (!finishOptionSent && !repeatTestOptionSent) {
+    while (digitalRead(swnumber[0]) == LOW && digitalRead(swnumber[4]) == LOW) {}
 
     if (digitalRead(swnumber[0]) == HIGH) {
       javaSerial.print("F");
       finishOptionSent = true;
     } else {
       javaSerial.print("A");
-      repeatOptionSent = true;
+      repeatTestOptionSent = true;
     }
 
     delay(10);
@@ -178,11 +184,11 @@ void clearProps() {
   inputBuffer = "";
   delay(10);
 
-  nextOptionSent = false;
+  answerOptionSent = false;
   delay(10);
-  optionNextAssigned = false;
+  nextOptionSend = false;
   delay(10);
-  repeatOptionSent = false;
+  repeatTestOptionSent = false;
   delay(10);
   finishOptionSent = false;
   delay(10);
