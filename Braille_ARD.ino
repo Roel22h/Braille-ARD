@@ -1,7 +1,6 @@
 //Librería para controlar servo
 #include <Servo.h>
 #include <SoftwareSerial.h>
-#include "pitches.h"
 
 // Serial consola JAVA y ARDUINO
 SoftwareSerial javaSerial(0, 1);
@@ -11,8 +10,8 @@ int swnumber[5] = { 2, 4, 12, 7, 8 };  // Lista de botones
 
 int servo[] = { 3, 5, 6, 9, 10, 11 };  // Puertos pwm
 
-int servDownPosition[] = { 155, 170, 170, 175, 166, 162 };  // Posiciones iniciales (calibración de servomotores a una misma altura)
-int servUpPosition[] = { 130, 145, 145, 145, 140, 142 };    // Posiciones finales
+int servDownPosition[] = { 180, 180, 180, 180, 180, 180 };  // Posiciones iniciales (calibración de servomotores a una misma altura)
+int servUpPosition[] = { 160, 160, 160, 160, 160, 160 };    // Posiciones finales
 
 char chars[] = "abcdefghijklmnopqrstuvwxyz,;:.?!#1234567890 ";  // Arreglo de letras y posiciones para cada servo
 
@@ -32,8 +31,6 @@ bool repeatTestOptionSent = false;
 bool finishOptionSent = false;
 bool nextOptionSend = false;
 bool repeatSoundCharacterOptionSend = false;
-
-int startTone = NOTE_B0;
 
 void setup() {
   // Iniciar consola JAVA serial
