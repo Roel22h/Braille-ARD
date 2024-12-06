@@ -11,7 +11,7 @@ int swnumber[5] = { 2, 4, 12, 7, 8 };  // Lista de botones
 int servo[] = { 3, 5, 6, 9, 10, 11 };  // Puertos pwm
 
 int servDownPosition[] = { 180, 180, 180, 180, 180, 180 };  // Posiciones iniciales (calibración de servomotores a una misma altura)
-int servUpPosition[] = { 160, 160, 160, 160, 160, 160 };    // Posiciones finales
+int servUpPosition[] = { 160, 155, 160, 165, 155, 150 };    // Posiciones finales
 
 char chars[] = "abcdefghijklmnopqrstuvwxyz,;:.?!#1234567890 ";  // Arreglo de letras y posiciones para cada servo
 
@@ -93,8 +93,6 @@ void print() {
     sendAnswer();
     sendOptionNext();
     clearProps();
-  } else {
-    // Serial.println("Caracter no identificado: " + String(character));
   }
 
   setInitPosition();
