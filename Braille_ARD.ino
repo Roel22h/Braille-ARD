@@ -8,7 +8,7 @@ SoftwareSerial javaSerial(0, 1);
 Servo srv[6];                          // Lista de Servos, pines y posiciones iniciales
 int swnumber[5] = { 2, 4, 12, 7, 8 };  // Lista de botones
 
-int servo[] = { 3, 5, 6, 9, 10, 11 };  // Puertos pwm
+int servo[] = { 3, 5, 6, 11, 10, 9 };  // Puertos pwm
 
 int servDownPosition[] = { 180, 180, 180, 180, 180, 180 };  // Posiciones iniciales (calibración de servomotores a una misma altura)
 int servUpPosition[] = { 160, 155, 160, 165, 155, 150 };    // Posiciones finales
